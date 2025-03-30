@@ -35,6 +35,7 @@ import org.apache.parquet.column.values.bytestreamsplit.ByteStreamSplitValuesRea
 import org.apache.parquet.column.values.bytestreamsplit.ByteStreamSplitValuesReaderForFloat;
 import org.apache.parquet.column.values.bytestreamsplit.ByteStreamSplitValuesReaderForInteger;
 import org.apache.parquet.column.values.bytestreamsplit.ByteStreamSplitValuesReaderForLong;
+import org.apache.parquet.column.values.colzip.ColZipValuesReader;
 import org.apache.parquet.column.values.delta.DeltaBinaryPackingValuesReader;
 import org.apache.parquet.column.values.deltalengthbytearray.DeltaLengthByteArrayValuesReader;
 import org.apache.parquet.column.values.deltastrings.DeltaByteArrayReader;
@@ -249,6 +250,19 @@ public enum Encoding {
     @Override
     public boolean usesDictionary() {
       return true;
+    }
+  },
+
+  COLZIP {
+    @Override
+    public ValuesReader getValuesReader(ColumnDescriptor descriptor, ValuesType valuesType) {
+      switch (descriptor.getType()) {
+        case BINARY:
+          return new ColZipValuesReader();
+        default:
+          throw new ParquetDecodingException(
+              "ColZip encoding not supported for type: " + descriptor.getType());
+      }
     }
   };
 
