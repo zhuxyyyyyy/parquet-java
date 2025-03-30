@@ -47,7 +47,8 @@ public class ParquetWriter<T> implements Closeable {
   public static final int DEFAULT_BLOCK_SIZE = 128 * 1024 * 1024;
   public static final int DEFAULT_PAGE_SIZE = ParquetProperties.DEFAULT_PAGE_SIZE;
   public static final CompressionCodecName DEFAULT_COMPRESSION_CODEC_NAME = CompressionCodecName.UNCOMPRESSED;
-  public static final boolean DEFAULT_IS_DICTIONARY_ENABLED = ParquetProperties.DEFAULT_IS_DICTIONARY_ENABLED;
+  //   public static final boolean DEFAULT_IS_DICTIONARY_ENABLED = ParquetProperties.DEFAULT_IS_DICTIONARY_ENABLED;
+  public static final boolean DEFAULT_IS_DICTIONARY_ENABLED = false;
   public static final boolean DEFAULT_IS_VALIDATING_ENABLED = false;
   public static final WriterVersion DEFAULT_WRITER_VERSION = ParquetProperties.DEFAULT_WRITER_VERSION;
 
