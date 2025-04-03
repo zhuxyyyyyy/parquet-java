@@ -18,15 +18,12 @@
  */
 package org.apache.parquet.column.values.colzip;
 
-import java.io.IOException;
 import java.nio.charset.Charset;
 import org.apache.parquet.bytes.ByteBufferAllocator;
 import org.apache.parquet.bytes.BytesInput;
 import org.apache.parquet.bytes.CapacityByteArrayOutputStream;
-import org.apache.parquet.bytes.LittleEndianDataOutputStream;
 import org.apache.parquet.column.Encoding;
 import org.apache.parquet.column.values.ValuesWriter;
-import org.apache.parquet.io.ParquetEncodingException;
 import org.apache.parquet.io.api.Binary;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -39,36 +36,41 @@ public class ColZipValuesWriter extends ValuesWriter {
 
   public static final Charset CHARSET = Charset.forName("UTF-8");
 
+  private static final ColZipCppWrapper cppWrapper = new ColZipCppWrapper();
+
   private CapacityByteArrayOutputStream arrayOut;
-  private LittleEndianDataOutputStream out;
+
+  private double memThreshold = 0.8;
+  private int srcBufCapacity = 64 * 1024 * 1024;
+  private byte[] srcBuf = new byte[srcBufCapacity];
+  private int srcBufSize = 0;
 
   public ColZipValuesWriter(int initialSize, int pageSize, ByteBufferAllocator allocator) {
     arrayOut = new CapacityByteArrayOutputStream(initialSize, pageSize, allocator);
-    out = new LittleEndianDataOutputStream(arrayOut);
   }
 
   @Override
   public final void writeBytes(Binary v) {
-    try {
-      v.writeTo(out);
-      out.write('\n');
-    } catch (IOException e) {
-      throw new ParquetEncodingException("could not write bytes", e);
-    }
+    byte[] vBytes = v.getBytes();
+    System.arraycopy(vBytes, 0, srcBuf, srcBufSize, vBytes.length);
+    srcBufSize += vBytes.length;
+    srcBuf[srcBufSize++] = '\n';
   }
 
   @Override
   public long getBufferedSize() {
-    return arrayOut.size();
+    if (srcBufSize > srcBufCapacity * memThreshold) {
+      return srcBufSize;
+    } else {
+      return 1;
+    }
   }
 
   @Override
   public BytesInput getBytes() {
-    try {
-      out.flush();
-    } catch (IOException e) {
-      throw new ParquetEncodingException("could not write page", e);
-    }
+    // add ColZip code here
+    byte[] dstBuf = cppWrapper.NativeColZipEncode(srcBuf, srcBufSize);
+    arrayOut.write(dstBuf, 0, dstBuf.length);
     if (LOG.isDebugEnabled()) LOG.debug("writing a buffer of size {}", arrayOut.size());
     return BytesInput.from(arrayOut);
   }
@@ -81,7 +83,6 @@ public class ColZipValuesWriter extends ValuesWriter {
   @Override
   public void close() {
     arrayOut.close();
-    out.close();
   }
 
   @Override

@@ -18,51 +18,31 @@
  */
 package org.apache.parquet.column.values.colzip;
 
-import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import org.apache.parquet.bytes.ByteBufferInputStream;
-import org.apache.parquet.bytes.BytesUtils;
 import org.apache.parquet.column.values.ValuesReader;
-import org.apache.parquet.io.ParquetDecodingException;
 import org.apache.parquet.io.api.Binary;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 public class ColZipValuesReader extends ValuesReader {
   private static final Logger LOG = LoggerFactory.getLogger(ColZipValuesReader.class);
-  private ByteBufferInputStream in;
-  private ByteArrayOutputStream out;
+  private static final ColZipCppWrapper cppWrapper = new ColZipCppWrapper();
+  private long readerInstance;
 
-  private byte[] getNextElement() throws IOException, RuntimeException {
-    while (true) {
-      int currByte = BytesUtils.readIntLittleEndianOnOneByte(in);
-      if (currByte == '\n') {
-        break;
-      }
-      out.write(currByte);
-    }
-    byte[] bytes = out.toByteArray();
-    out.reset();
-    return bytes;
+  private byte[] getNextElement() {
+    return cppWrapper.ColZipDecodeGetNext(readerInstance);
   }
 
   @Override
   public Binary readBytes() {
-    try {
-      byte[] bytes = getNextElement();
-      return Binary.fromConstantByteArray(bytes);
-    } catch (IOException | RuntimeException e) {
-      throw new ParquetDecodingException("could not read bytes at offset " + in.position(), e);
-    }
+    byte[] bytes = getNextElement();
+    return Binary.fromConstantByteArray(bytes);
   }
 
   @Override
   public void skip() {
-    try {
-      getNextElement();
-    } catch (IOException | RuntimeException e) {
-      throw new ParquetDecodingException("could not skip bytes at offset " + in.position(), e);
-    }
+    getNextElement();
   }
 
   @Override
@@ -71,7 +51,12 @@ public class ColZipValuesReader extends ValuesReader {
         "init from page at offset {} for length {}",
         stream.position(),
         (stream.available() - stream.position()));
-    this.in = stream.remainingStream();
-    this.out = new ByteArrayOutputStream();
+    int pageSize = (int) (stream.available() - stream.position());
+    ByteBufferInputStream in = stream.remainingStream();
+    byte[] bytes = new byte[pageSize];
+    in.read(bytes, 0, pageSize);
+
+    LOG.debug("bytes len: {}", bytes.length);
+    readerInstance = cppWrapper.InitColZipDecoder(bytes, bytes.length);
   }
 }
