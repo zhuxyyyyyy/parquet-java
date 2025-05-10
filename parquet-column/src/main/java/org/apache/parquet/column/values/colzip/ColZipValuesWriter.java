@@ -40,12 +40,13 @@ public class ColZipValuesWriter extends ValuesWriter {
 
   private CapacityByteArrayOutputStream arrayOut;
 
-  private double memThreshold = 0.8;
-  private int srcBufCapacity = 64 * 1024 * 1024;
+  private double memThreshold = 0.5;
+  private int srcBufCapacity = 16 * 1024 * 1024;
   private byte[] srcBuf = new byte[srcBufCapacity];
   private int srcBufSize = 0;
 
   public ColZipValuesWriter(int initialSize, int pageSize, ByteBufferAllocator allocator) {
+    //     memThreshold = 1.0 * pageSize / srcBufCapacity;
     arrayOut = new CapacityByteArrayOutputStream(initialSize, pageSize, allocator);
   }
 

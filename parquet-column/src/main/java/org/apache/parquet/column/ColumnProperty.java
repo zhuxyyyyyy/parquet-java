@@ -29,10 +29,12 @@ import org.apache.parquet.hadoop.metadata.ColumnPath;
  */
 abstract class ColumnProperty<T> {
   private static class DefaultColumnProperty<T> extends ColumnProperty<T> {
-    private final T defaultValue;
+    private T defaultValue;
+    private final Map<ColumnPath, T> values;
 
     private DefaultColumnProperty(T defaultValue) {
       this.defaultValue = defaultValue;
+      values = new HashMap<>();
     }
 
     @Override
@@ -41,8 +43,22 @@ abstract class ColumnProperty<T> {
     }
 
     @Override
+    public void setDefaultValue(T value) {
+      defaultValue = value;
+    }
+
+    @Override
     public T getValue(ColumnPath columnPath) {
-      return getDefaultValue();
+      if (values.containsKey(columnPath)) {
+        return values.get(columnPath);
+      } else {
+        return defaultValue;
+      }
+    }
+
+    @Override
+    public void setValue(ColumnPath columnPath, T value) {
+      values.put(columnPath, value);
     }
 
     @Override
@@ -67,6 +83,11 @@ abstract class ColumnProperty<T> {
         return value;
       }
       return getDefaultValue();
+    }
+
+    @Override
+    public void setValue(ColumnPath columnPath, T value) {
+      values.put(columnPath, value);
     }
 
     @Override
@@ -125,11 +146,23 @@ abstract class ColumnProperty<T> {
 
   public abstract T getValue(ColumnPath columnPath);
 
+  public abstract void setDefaultValue(T defaultValue);
+
+  public abstract void setValue(ColumnPath columnPath, T value);
+
   public T getValue(String columnPath) {
     return getValue(ColumnPath.fromDotString(columnPath));
   }
 
   public T getValue(ColumnDescriptor columnDescriptor) {
     return getValue(ColumnPath.get(columnDescriptor.getPath()));
+  }
+
+  public void setValue(String columnPath, T value) {
+    setValue(ColumnPath.fromDotString(columnPath), value);
+  }
+
+  public void setValue(ColumnDescriptor columnDescriptor, T value) {
+    setValue(ColumnPath.get(columnDescriptor.getPath()), value);
   }
 }

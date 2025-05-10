@@ -27,7 +27,5 @@ public class ColZipCppWrapper {
 
   public native long InitColZipDecoder(byte[] data, int len);
 
-  public native void FreeColZipDecoder(long nativeColZipDecoder);
-
   public native byte[] ColZipDecodeGetNext(long nativeDecoderHandle);
 }

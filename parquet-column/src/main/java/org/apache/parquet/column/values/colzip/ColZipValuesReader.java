@@ -51,12 +51,10 @@ public class ColZipValuesReader extends ValuesReader {
         "init from page at offset {} for length {}",
         stream.position(),
         (stream.available() - stream.position()));
-    int pageSize = (int) (stream.available() - stream.position());
-    ByteBufferInputStream in = stream.remainingStream();
+    int pageSize = (int) (stream.available());
     byte[] bytes = new byte[pageSize];
-    in.read(bytes, 0, pageSize);
-
-    LOG.debug("bytes len: {}", bytes.length);
+    int actualPageSize = stream.read(bytes, 0, pageSize);
+    LOG.debug("bytes len: {}, actual bytes len: {}", bytes.length, actualPageSize);
     readerInstance = cppWrapper.InitColZipDecoder(bytes, bytes.length);
   }
 }

@@ -19,6 +19,8 @@
 package org.apache.parquet.hadoop;
 
 import java.io.IOException;
+import java.util.Arrays;
+import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import org.apache.hadoop.conf.Configuration;
@@ -31,6 +33,8 @@ import org.apache.parquet.hadoop.CodecFactory.BytesCompressor;
 import org.apache.parquet.hadoop.api.WriteSupport;
 import org.apache.parquet.hadoop.metadata.CompressionCodecName;
 import org.apache.parquet.schema.MessageType;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * Writes records to a Parquet file
@@ -39,6 +43,7 @@ import org.apache.parquet.schema.MessageType;
  * @see ParquetOutputFormat
  */
 public class ParquetRecordWriter<T> extends RecordWriter<Void, T> {
+  private static final Logger LOG = LoggerFactory.getLogger(ParquetRecordWriter.class);
 
   private final InternalParquetRecordWriter<T> internalWriter;
   private final MemoryManager memoryManager;
@@ -200,6 +205,14 @@ public class ParquetRecordWriter<T> extends RecordWriter<Void, T> {
       ParquetProperties props,
       MemoryManager memoryManager,
       Configuration conf) {
+    Boolean colzipEnabled = conf.getBoolean("spark.hadoop.parquet.colzip.enable", false);
+    if (colzipEnabled) {
+      String columnListString = conf.get("spark.hadoop.parquet.colzip.column.list", null);
+      List<String> columnList = Arrays.asList(columnListString.split(","));
+      for (String column : columnList) {
+        props.setColZipEnabled(column, true);
+      }
+    }
     this.codecFactory = new CodecFactory(conf, props.getPageSizeThreshold());
     internalWriter = new InternalParquetRecordWriter<T>(
         w,

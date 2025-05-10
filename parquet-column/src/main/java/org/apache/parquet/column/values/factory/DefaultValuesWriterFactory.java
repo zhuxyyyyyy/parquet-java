@@ -112,7 +112,7 @@ public class DefaultValuesWriterFactory implements ValuesWriterFactory {
       Encoding dictPageEncoding,
       Encoding dataPageEncoding,
       ValuesWriter writerToFallBackTo) {
-    if (parquetProperties.isDictionaryEnabled(path)) {
+    if (parquetProperties.isDictionaryEnabled(path) && (!parquetProperties.isColzipEnabled(path))) {
       return FallbackValuesWriter.of(
           dictionaryWriter(path, parquetProperties, dictPageEncoding, dataPageEncoding), writerToFallBackTo);
     } else {

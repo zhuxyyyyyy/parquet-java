@@ -95,7 +95,7 @@ public class DefaultV1ValuesWriterFactory implements ValuesWriterFactory {
 
   private ValuesWriter getBinaryValuesWriter(ColumnDescriptor path) {
     ValuesWriter fallbackWriter;
-    if (parquetProperties.isDictionaryEnabled(path)) {
+    if (!parquetProperties.isColzipEnabled(path)) {
       fallbackWriter = new PlainValuesWriter(
           parquetProperties.getInitialSlabSize(),
           parquetProperties.getPageSizeThreshold(),

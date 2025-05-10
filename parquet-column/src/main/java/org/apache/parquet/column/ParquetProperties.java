@@ -49,6 +49,7 @@ public class ParquetProperties {
   public static final int DEFAULT_PAGE_SIZE = 1024 * 1024;
   public static final int DEFAULT_DICTIONARY_PAGE_SIZE = DEFAULT_PAGE_SIZE;
   public static final boolean DEFAULT_IS_DICTIONARY_ENABLED = true;
+  public static final boolean DEFAULT_IS_COLZIP_ENABLED = false;
   public static final boolean DEFAULT_IS_BYTE_STREAM_SPLIT_ENABLED = false;
   public static final WriterVersion DEFAULT_WRITER_VERSION = WriterVersion.PARQUET_1_0;
   public static final boolean DEFAULT_ESTIMATE_ROW_COUNT_FOR_PAGE_SIZE_CHECK = true;
@@ -105,6 +106,7 @@ public class ParquetProperties {
   private final int dictionaryPageSizeThreshold;
   private final WriterVersion writerVersion;
   private final ColumnProperty<Boolean> dictionaryEnabled;
+  private final ColumnProperty<Boolean> colzipEnabled;
   private final int minRowCountForPageSizeCheck;
   private final int maxRowCountForPageSizeCheck;
   private final boolean estimateNextSizeCheck;
@@ -137,6 +139,7 @@ public class ParquetProperties {
     this.dictionaryPageSizeThreshold = builder.dictPageSize;
     this.writerVersion = builder.writerVersion;
     this.dictionaryEnabled = builder.enableDict.build();
+    this.colzipEnabled = builder.enableColzip.build();
     this.minRowCountForPageSizeCheck = builder.minRowCountForPageSizeCheck;
     this.maxRowCountForPageSizeCheck = builder.maxRowCountForPageSizeCheck;
     this.estimateNextSizeCheck = builder.estimateNextSizeCheck;
@@ -230,6 +233,14 @@ public class ParquetProperties {
 
   public boolean isDictionaryEnabled(ColumnDescriptor column) {
     return dictionaryEnabled.getValue(column);
+  }
+
+  public boolean isColzipEnabled(ColumnDescriptor column) {
+    return colzipEnabled.getValue(column);
+  }
+
+  public void setColZipEnabled(String column, boolean enabled) {
+    colzipEnabled.setValue(column, enabled);
   }
 
   @Deprecated()
@@ -383,6 +394,7 @@ public class ParquetProperties {
     private int pageSize = DEFAULT_PAGE_SIZE;
     private int dictPageSize = DEFAULT_DICTIONARY_PAGE_SIZE;
     private final ColumnProperty.Builder<Boolean> enableDict;
+    private final ColumnProperty.Builder<Boolean> enableColzip;
     private WriterVersion writerVersion = DEFAULT_WRITER_VERSION;
     private int minRowCountForPageSizeCheck = DEFAULT_MINIMUM_RECORD_COUNT_FOR_CHECK;
     private int maxRowCountForPageSizeCheck = DEFAULT_MAXIMUM_RECORD_COUNT_FOR_CHECK;
@@ -409,6 +421,7 @@ public class ParquetProperties {
 
     private Builder() {
       enableDict = ColumnProperty.<Boolean>builder().withDefaultValue(DEFAULT_IS_DICTIONARY_ENABLED);
+      enableColzip = ColumnProperty.<Boolean>builder().withDefaultValue(DEFAULT_IS_COLZIP_ENABLED);
       byteStreamSplitEnabled = ColumnProperty.<ByteStreamSplitMode>builder()
           .withDefaultValue(
               DEFAULT_IS_BYTE_STREAM_SPLIT_ENABLED
@@ -428,6 +441,7 @@ public class ParquetProperties {
     private Builder(ParquetProperties toCopy) {
       this.pageSize = toCopy.pageSizeThreshold;
       this.enableDict = ColumnProperty.builder(toCopy.dictionaryEnabled);
+      this.enableColzip = ColumnProperty.builder(toCopy.colzipEnabled);
       this.dictPageSize = toCopy.dictionaryPageSizeThreshold;
       this.writerVersion = toCopy.writerVersion;
       this.minRowCountForPageSizeCheck = toCopy.minRowCountForPageSizeCheck;
@@ -481,6 +495,29 @@ public class ParquetProperties {
      */
     public Builder withDictionaryEncoding(String columnPath, boolean enableDictionary) {
       this.enableDict.withValue(columnPath, enableDictionary);
+      return this;
+    }
+
+    /**
+     * Enable or disable colzip encoding.
+     *
+     * @param enableColzip whether colzip encoding should be enabled
+     * @return this builder for method chaining.
+     */
+    public Builder withColzipEncoding(boolean enableColzip) {
+      this.enableColzip.withDefaultValue(enableColzip);
+      return this;
+    }
+
+    /**
+     * Enable or disable colzip encoding for the specified column.
+     *
+     * @param columnPath       the path of the column (dot-string)
+     * @param enableColzip whether colzip encoding should be enabled
+     * @return this builder for method chaining.
+     */
+    public Builder withColzipEncoding(String columnPath, boolean enableColzip) {
+      this.enableColzip.withValue(columnPath, enableColzip);
       return this;
     }
 
